@@ -1,0 +1,80 @@
+plugins {
+    id 'com.android.application'
+    id 'com.google.gms.google-services'
+    id 'com.google.firebase.crashlytics'
+    id 'com.google.firebase.appdistribution'
+}
+
+android {
+    namespace 'com.cybersafetycs.wifishield'
+    compileSdk 35
+    buildToolsVersion '34.0.0'
+
+    defaultConfig {
+        applicationId 'com.cybersafetycs.wifishield'
+        minSdk 26
+        targetSdk 34
+        versionCode 13
+        versionName '1.4.6'
+    }
+
+    // No signing key is committed to this repo. Two options:
+    //   1. ./build.sh  — auto-generates a throwaway keystore and signs, or
+    //   2. put your own keystore at ../wifishield.jks and restore the
+    //      signingConfigs block from your private copy of the project.
+    // Without a keystore the release build simply produces an unsigned APK.
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+                    'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    // keep the existing hand-rolled source layout (build.sh uses the same files)
+    sourceSets {
+        main {
+            manifest.srcFile '../AndroidManifest-gradle.xml'
+            java.srcDirs = ['../src']
+            res.srcDirs = ['../res']
+            assets.srcDirs = ['../assets']
+            // prebuilt native engine (libwifishield.so) — see src/cpp/
+            jniLibs.srcDirs = ['../src/cpp/prebuilt']
+        }
+    }
+}
+
+dependencies {
+    // Import the Firebase BoM
+    implementation platform('com.google.firebase:firebase-bom:34.19.0')
+
+    // Firebase products
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-messaging'        // FCM push notifications
+    implementation 'com.google.firebase:firebase-crashlytics'      // crash reports
+    implementation 'com.google.firebase:firebase-config'           // Remote Config (+ firebase-abt A/B testing)
+    implementation 'com.google.firebase:firebase-inappmessaging-display' // In-App Messaging UI
+    implementation 'com.google.firebase:firebase-appcheck'         // App Check
+    implementation 'com.google.firebase:firebase-appcheck-playintegrity'
+    implementation 'com.google.firebase:firebase-appcheck-debug'
+}
+
+// App Distribution: drop app/service-account.json to enable
+//   ./gradlew appDistributionUploadRelease
+if (file('service-account.json').exists()) {
+    firebaseAppDistribution {
+        serviceAccountCredentials = file('service-account.json')
+        groups = 'wifi-testers'
+    }
+}
